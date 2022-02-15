@@ -32,16 +32,16 @@ class vwaad:
 
 
 
-    def __init__(self, targetSeg = ".text", vmpSeg = ".asp0"):      
+    def __init__(self, targetSeg = ".text", vmpSeg = ".vmp0"):      
         #Get Segment Info (start, end, size)
-        self.vmpSeg = ".asp0"
-        vmpSeg = ".asp0"
+        self.vmpSeg = ".vmp0"
+        vmpSeg = ".vmp0"
         if self.getVmpCallList(targetSeg, vmpSeg) is not True:
             print ("Get Call list Fail")
             return
         
         for x in self.call_list:
-            print ""
+            print ("")
             result = self.functionDummyTracer(x)
             if result is False:
                 self.dummy_fail_list.append(x)
@@ -64,7 +64,7 @@ class vwaad:
         #self.dummy_gadget_list = []
 
         for x in self.call_list:
-            print ""
+            print ("")
             result = self.functionDummyTracer(x)
             if result is False:
                 self.dummy_fail_list.append(x)
@@ -110,7 +110,7 @@ class vwaad:
         self.printDummyGadget()
 
         for x in self.dummy_patch_list:
-            print hex(x).rstrip('L')
+            print (hex(x).rstrip('L'))
     
 
     ############################## PRINT FUNCTION ##############################
@@ -134,13 +134,13 @@ class vwaad:
     def printCallList(self):
         print ("call_list")
         for x in self.call_list:
-            print hex(x).rstrip("L"), 
+            print (hex(x).rstrip("L")) 
         print ("")
     
     def printFailList(self):
         print ("fail_list")
         for x in self.fail_list:
-            print hex(x).rstrip("L"),
+            print (hex(x).rstrip("L"))
         print ("")
     
     def printDebugFailList(self):
@@ -188,9 +188,9 @@ class vwaad:
     '''
     def getbyte_test(self,addr,size):
         if get_bytes(addr, size) == '\x90':
-            print data
+            print (data)
         else:
-            print "NONONO"
+            print ("NONONO")
         
 
     def patchOllyScript(self):
@@ -225,8 +225,12 @@ class vwaad:
     def getVmpCallList(self, targetSeg, vmpSeg):
         idx = 0
         addr = 0
-        dis_ea, dis_end, dis_size = self.getSegName(targetSeg)   
-        vmp_ea, vmp_end, vmp_size = self.getSegName(vmpSeg)
+        try : 
+            dis_ea, dis_end, dis_size = self.getSegName(targetSeg)   
+            vmp_ea, vmp_end, vmp_size = self.getSegName(vmpSeg)
+        except Exception as E : 
+            print("Exception : "+str(E)+"\nsegname :"+vmpSeg)
+            print(" SegInfo : "+str(self.getSegName(vmpSeg)))
 
         
         while dis_ea < dis_end:
@@ -237,7 +241,7 @@ class vwaad:
                     self.vmp_list.append(addr)
                     self.call_list.append(dis_ea)
 
-            dis_ea = idc.NextHead(dis_ea)
+            dis_ea = idc.next_head(dis_ea)
         
         return True
 
@@ -275,19 +279,19 @@ class vwaad:
                 if len(result) > 0:
                     result = []
                 result.append(self.getGadget(addr, ep, 1))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
             
             elif len(result) == 1 and self.findSecondGadget(addr, result[0]['reg']) == True:
                 #input gadget
                 result.append(self.getGadget(addr,ep, 2))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
 
             elif len(result) == 2 and self.findThirdGadget(addr, result[0]['reg']) == True:
                 result.append(self.getGadget(addr,ep, 3))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
             
             else:
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
         
         if debug is True and len(result) > 0:
             for x in result:
@@ -338,19 +342,19 @@ class vwaad:
                 if len(result) > 0:
                     result = []
                 result.append(self.getGadget(addr, ep, 1))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
 
             elif len(result) == 1 and self.findSecondDummyGadget(addr, result[0]['reg']) == True:
                 #input gadget
                 result.append(self.getGadget(addr,ep, 2))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
 
             elif len(result) == 2 and self.findThirdDummyGadget(addr, result[0]['reg']) == True:
                 result.append(self.getGadget(addr,ep, 3))
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
             
             else:
-                addr = idc.NextHead(addr)
+                addr = idc.next_head(addr)
         
         if debug is True and len(result) > 0:
             for x in result:
@@ -358,7 +362,7 @@ class vwaad:
             
 
 
-        print ""
+        print ("")
         if len(result) == 3:
             return result
         else:
@@ -390,11 +394,11 @@ class vwaad:
     return : segment start address, segment end address, segment size
     '''
     def getSegName(self, segName):
-        print segName
+        print (segName)
         for seg in idautils.Segments():
-            print idc.SegName(seg)
-            if idc.SegName(seg) == segName:
-                return idc.SegStart(seg), idc.SegEnd(seg), idc.SegEnd(seg) - idc.SegStart(seg)
+            print(idc.get_segm_name(seg))
+            if idc.get_segm_name(seg) == segName:
+                return idc.get_segm_start(seg), idc.get_segm_end(seg), idc.get_segm_end(seg) - idc.get_segm_start(seg)
 
     
     #API 가젯 처리 
@@ -405,7 +409,7 @@ class vwaad:
     '''
     def findFirstGadget(self, eip):
         if idc.GetDisasm(eip)[:4] == "mov ":
-            if GetOpnd(eip,0)[0] == "e" and (GetOpnd(eip,1)[:7] == "(offset" or GetOpnd(eip,1)[:6] == "offset" or GetOpnd(eip,1)[-1] == "h"):
+            if print_operand(eip,0)[0] == "e" and (print_operand(eip,1)[:7] == "(offset" or print_operand(eip,1)[:6] == "offset" or print_operand(eip,1)[-1] == "h"):
                 return True
             else:
                 return False
@@ -420,7 +424,7 @@ class vwaad:
     def findSecondGadget(self, eip,reg):
         
         if idc.GetDisasm(eip)[:4] == "mov ":
-            if GetOpnd(eip,0) == reg and (GetOpnd(eip,1)[:2] == "[e" or GetOpnd(eip,1)[:-2] == "h]"):
+            if print_operand(eip,0) == reg and (print_operand(eip,1)[:2] == "[e" or print_operand(eip,1)[:-2] == "h]"):
                 return True
             else:
                 return False
@@ -434,7 +438,7 @@ class vwaad:
     '''
     def findThirdGadget(self, eip,reg):
         if idc.GetDisasm(eip)[:4] == "lea ":
-            if GetOpnd(eip,0) == reg and (GetOpnd(eip,1)[:2] == "[e" or GetOpnd(eip,1)[:-2] == "h]"):
+            if print_operand(eip,0) == reg and (print_operand(eip,1)[:2] == "[e" or print_operand(eip,1)[:-2] == "h]"):
                 return True
             else:
                 return False
@@ -457,8 +461,9 @@ class vwaad:
     def findFirstDummyGadget(self, eip):
         
         if idc.GetDisasm(eip)[:4] == "mov ":
-            if GetOpnd(eip,0)[0] == "e" and GetOpnd(eip,1)[:5] == "[esp+":
-                print "FIRST MATCH TRUE", idc.GetDisasm(eip)
+            if print_operand(eip,0)[0] == "e" and print_operand(eip,1)[:5] == "[esp+":
+                print ("FIRST MATCH TRUE")
+                print (idc.GetDisasm(eip))
                 return True
             else:
                 return False
@@ -472,7 +477,7 @@ class vwaad:
     '''
     def findSecondDummyGadget(self, eip,reg):
         if idc.GetDisasm(eip)[:4] == "lea ":
-            if GetOpnd(eip,0) == reg and GetOpnd(eip,1)[1:4] == reg and GetOpnd(eip,1)[-3:] == "+1]":
+            if print_operand(eip,0) == reg and print_operand(eip,1)[1:4] == reg and print_operand(eip,1)[-3:] == "+1]":
                 return True
             else:
                 return False
@@ -487,7 +492,7 @@ class vwaad:
     def findThirdDummyGadget(self, eip,reg):
         
         if idc.GetDisasm(eip)[:4] == "mov ":
-            if GetOpnd(eip,0)[:5] == "[esp+" and GetOpnd(eip,1) == reg:
+            if print_operand(eip,0)[:5] == "[esp+" and print_operand(eip,1) == reg:
                 return True
             else:
                 return False
@@ -500,7 +505,7 @@ class vwaad:
     return : True/False
     '''
     def getGadget(self, eip, ep, flow):
-        return dict({ 'flow' : flow,'entrypoint' :ep, 'addr': eip, 'gadget': idc.GetDisasm(eip), 'reg': GetOpnd(eip,0), 'const': get_operand_value(eip,1)})
+        return dict({ 'flow' : flow,'entrypoint' :ep, 'addr': eip, 'gadget': idc.GetDisasm(eip), 'reg': print_operand(eip,0), 'const': get_operand_value(eip,1)})
     
     '''
     decode address from gadget
@@ -538,10 +543,10 @@ class vwaad:
         data = 0
 
         disass = idc.GetDisasm(eip)
-        print ("[DEBUG] DUMMY VALUE FIND : {0} : {1}\t{2}\t{3}".format(hex(eip).rstrip('L'), disass, GetOpnd(eip,0), GetOpnd(eip,1)))
+        print ("[DEBUG] DUMMY VALUE FIND : {0} : {1}\t{2}\t{3}".format(hex(eip).rstrip('L'), disass, print_operand(eip,0), print_operand(eip,1)))
 
-        if disass[:4] == "lea" and (GetOpnd(eip,0)[:2] == "e" and GetOpnd(eip,1)[:2] == "[e" and GetOpnd(eip,1)[:-3] == "+1]"):
-            print ("[DEBUG] DUMMY VALUE FIND : {0} : {1}\t{2}\t{3}".format(hex(eip).lstrip('L'), disass, GetOpnd(eip,1), GetOpnd(eip,1)))
+        if disass[:4] == "lea" and (print_operand(eip,0)[:2] == "e" and print_operand(eip,1)[:2] == "[e" and print_operand(eip,1)[:-3] == "+1]"):
+            print ("[DEBUG] DUMMY VALUE FIND : {0} : {1}\t{2}\t{3}".format(hex(eip).lstrip('L'), disass, print_operand(eip,1), print_operand(eip,1)))
             return True
         else:
             return False
